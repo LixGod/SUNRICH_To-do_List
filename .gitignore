@@ -1,0 +1,13 @@
+.env
+*.zip
+frontend-ci-check/
+**/node_modules/
+**/dist/
+**/build/
+**/.gradle/
+**/.kotlin/
+**/.angular/
+backend/data/
+frontend/test-results/
+frontend/playwright-report/
+.vercel/

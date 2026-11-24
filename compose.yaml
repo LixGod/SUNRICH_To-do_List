@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: sunrich_todo
+      MYSQL_USER: todo_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build: ./backend
+    image: sunrich-todo-backend:latest
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/sunrich_todo?useSSL=false&allowPublicKeyRetrieval=true
+      DB_USER: todo_app
+      DB_PASS: ${DB_PASSWORD:?Set DB_PASSWORD}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:?Set APP_ADMIN_USERNAME}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:?Set APP_ADMIN_PASSWORD}
+      APP_ADMIN_NAME: ${APP_ADMIN_NAME:-Super Admin}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    image: sunrich-todo-frontend:latest
+    ports:
+      - "127.0.0.1:${APP_PORT:-8088}:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

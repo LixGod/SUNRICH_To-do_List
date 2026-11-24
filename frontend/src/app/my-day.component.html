@@ -1,0 +1,470 @@
+<main class="canvas-wrap">
+  <section class="masthead" aria-label="Daily overview">
+    <div class="masthead-left">
+      <div class="briefing-kicker">
+        <img class="masthead-logo" src="/sunrich-logo.png" alt="Sunrich Group" width="108" height="44">
+        <span class="kicker-date">{{ app.formattedSelectedDate() }}</span>
+        @if (app.selectedDate() !== app.todayIso()) {
+          <button type="button" class="jump-today-pill" (click)="app.selectedDate.set(app.todayIso())">Jump to Today</button>
+        }
+      </div>
+      <h1 class="greeting-h1">My Day</h1>
+      <p class="greeting-sub">{{ app.greetingLabel() }}, {{ app.firstName() }}. Unfinished tasks carry forward.</p>
+    </div>
+    <div class="masthead-actions">
+      <button type="button" class="btn-primary" (click)="app.openNewTask()"><span class="material-symbols-outlined inline-ic">add</span> New Task</button>
+    </div>
+  </section>
+
+  <section class="metrics-row" aria-label="Task summary">
+    <div class="metric-tile">
+      <div class="metric-info">
+        <span class="metric-kicker">OPEN TODAY</span>
+        <div class="metric-number-row">
+          <span class="metric-big">{{ app.todayActiveCount() }}</span>
+          <span class="metric-unit">active</span>
+        </div>
+        <div class="metric-foot">
+          <span [class]="highOpenCount() > 0 ? 'dot-primary' : 'dot-neutral'"></span>
+          <span>{{ highOpenCount() > 0 ? highOpenCount() + ' high priority' : 'No high priority' }}</span>
+        </div>
+      </div>
+      <div class="tile-icon-box" [class.warn-box]="highOpenCount() > 0" aria-hidden="true">
+        <span class="material-symbols-outlined">assignment</span>
+      </div>
+    </div>
+
+    <div class="metric-tile" [class.overdue-tile]="app.carriedCount() > 0">
+      <div class="metric-info">
+        <span class="metric-kicker">CARRIED FORWARD</span>
+        <div class="metric-number-row">
+          <span class="metric-big">{{ app.carriedCount() }}</span>
+          <span class="metric-unit">earlier days</span>
+        </div>
+        <div class="metric-foot muted">
+          <span [class]="app.carriedCount() > 0 ? 'dot-amber' : 'dot-green'"></span>
+          <span>{{ app.carriedCount() > 0 ? 'Needs attention today' : 'All caught up' }}</span>
+        </div>
+      </div>
+      <div class="tile-icon-box" [class.warn-box]="app.carriedCount() > 0" aria-hidden="true">
+        <span class="material-symbols-outlined">history</span>
+      </div>
+    </div>
+
+    <div class="metric-tile">
+      <div class="metric-info">
+        <span class="metric-kicker">COMPLETED TODAY</span>
+        <div class="metric-number-row">
+          <span class="metric-big text-tertiary">{{ app.completedTodayCount() }}</span>
+          <span class="metric-unit">finished</span>
+        </div>
+        <div class="daily-progress-track" aria-hidden="true">
+          <div class="daily-progress-fill" [style.width.%]="dailyProgressPct()"></div>
+        </div>
+        <div class="metric-foot text-tertiary">
+          <span class="dot-green"></span>
+          <span>{{ dailyProgressPct() }}% of today's load</span>
+        </div>
+      </div>
+      <div class="progress-ring-wrap" [class.complete]="dailyProgressPct() === 100" aria-hidden="true">
+        <svg class="progress-ring" viewBox="0 0 56 56">
+          <circle class="progress-ring-track" cx="28" cy="28" r="22" />
+          <circle
+            class="progress-ring-fill"
+            cx="28"
+            cy="28"
+            r="22"
+            [style.stroke-dashoffset]="138.23 * (1 - dailyProgressPct() / 100)"
+          />
+        </svg>
+        <span class="progress-ring-pct">{{ dailyProgressPct() }}%</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="dashboard-grid">
+    <div class="main-stack">
+      @if (app.focusTasks().length > 0) {
+        <section class="focus-container">
+          <div class="focus-header">
+            <div class="focus-title-group">
+              <span class="focus-badge-icon" aria-hidden="true">
+                <span class="material-symbols-outlined filled">star</span>
+              </span>
+              <h2>Today's Focus</h2>
+            </div>
+            <span class="quorum-pill">{{ app.focusTasks().length }}/3 Pinned</span>
+          </div>
+          <ul class="focus-slots">
+            @for (t of app.focusTasks(); track t.id) {
+              <li class="focus-slot-card" [attr.data-prio]="t.priority">
+                <input type="checkbox" class="exec-checkbox" [checked]="false" [disabled]="!app.canChangeStatus(t)" (change)="app.toggleComplete(t)" [attr.aria-label]="'Complete ' + t.title">
+                <div class="slot-body" (click)="app.openEdit(t)">
+                  <div class="lr-title-line">
+                    <span class="slot-title">{{ t.title }}</span>
+                    <span class="prio-pill" [attr.data-prio]="t.priority">{{ t.priority }}</span>
+                    <span class="mobile-task-status" [attr.data-status]="t.status">{{ t.status === 'IN_PROGRESS' ? 'In Progress' : 'To Do' }}</span>
+                  </div>
+                  @if (app.assignmentLabel(t)) {
+                    <span class="assignment-pill">
+                      <span class="material-symbols-outlined inline-ic" aria-hidden="true">assignment_ind</span>
+                      <span>{{ app.assignmentLabel(t) }}</span>
+                    </span>
+                  }
+                </div>
+                @if (app.canEdit(t)) { <button type="button" class="icon-btn active-pin" (click)="app.toggleFocus(t)" [attr.aria-label]="'Remove ' + t.title + ' from focus'" pTooltip="Remove from Focus" tooltipPosition="top"><span class="material-symbols-outlined filled">push_pin</span></button> }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      @for (section of app.daySections(); track section.title) {
+        <section class="card-panel agenda-panel">
+          <div class="panel-header">
+            <div class="panel-title-row">
+              <span class="material-symbols-outlined muted">{{ section.title === 'Assigned To' ? 'assignment_ind' : 'view_agenda' }}</span>
+              <h2 [id]="section.title === 'Assigned To' ? 'assigned-to-heading' : null">{{ section.title }}</h2>
+              @if (section.title !== 'Assigned To' && section.tasks.length > 0) {
+                <span class="panel-count-pill">{{ section.tasks.length }}</span>
+              }
+            </div>
+            @if (section.title === 'Assigned To' && app.assignedToSummary().length > 0) {
+              <button type="button" class="btn-secondary sm" (click)="openAssignee('ALL')">
+                View All Tasks
+              </button>
+            } @else if (section.title !== 'Assigned To' && section.tasks.length > 0) {
+              <div class="agenda-filter-pills" role="group" aria-label="Filter tasks by priority">
+                <button type="button" class="agenda-filter-pill" [class.active]="agendaPriorityFilter() === 'ALL'" (click)="agendaPriorityFilter.set('ALL')">
+                  All ({{ section.tasks.length }})
+                </button>
+                <button type="button" class="agenda-filter-pill prio-high" [class.active]="agendaPriorityFilter() === 'HIGH'" (click)="agendaPriorityFilter.set('HIGH')">
+                  High ({{ countByPriority(section.tasks, 'HIGH') }})
+                </button>
+                <button type="button" class="agenda-filter-pill prio-med" [class.active]="agendaPriorityFilter() === 'MEDIUM'" (click)="agendaPriorityFilter.set('MEDIUM')">
+                  Med ({{ countByPriority(section.tasks, 'MEDIUM') }})
+                </button>
+                <button type="button" class="agenda-filter-pill prio-low" [class.active]="agendaPriorityFilter() === 'LOW'" (click)="agendaPriorityFilter.set('LOW')">
+                  Low ({{ countByPriority(section.tasks, 'LOW') }})
+                </button>
+              </div>
+            }
+          </div>
+          @if (app.loading()) {
+            <div class="loading-skeletons" role="status" aria-label="Loading tasks">
+              <p-skeleton height="4.5rem" />
+              <p-skeleton height="4.5rem" />
+              <p-skeleton height="4.5rem" />
+            </div>
+          }
+          @else if (section.title === 'Assigned To') {
+            @if (app.assignedToSummary().length === 0) {
+              <p class="empty-state">No tasks assigned to others.</p>
+            } @else {
+              <div tabindex="0" role="region" aria-labelledby="assigned-to-heading" class="assigned-table-wrap">
+                <table class="assigned-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">User</th>
+                      <th scope="col" class="num-col">To-do + In Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of app.assignedToSummary(); track row.recipientId) {
+                      <tr class="assigned-row" (click)="openAssignee(row.recipientId)">
+                        <th scope="row">
+                          <button
+                            type="button"
+                            class="assigned-user-btn"
+                            (click)="openAssignee(row.recipientId); $event.stopPropagation()"
+                          >
+                            <span class="assigned-avatar" [attr.data-tone]="app.avatarTone(row.name)" aria-hidden="true">{{ initials(row.name) }}</span>
+                            <span>{{ row.name }}</span>
+                            <span class="material-symbols-outlined inline-ic assigned-row-arrow" aria-hidden="true">chevron_right</span>
+                          </button>
+                        </th>
+                        <td class="num-col">
+                          <div class="assigned-counts-cell">
+                            <span class="assigned-total-sub">{{ row.tasks.length }} total</span>
+                            <span class="assigned-count-pill" [class.zero]="row.openCount === 0">{{ row.openCount }}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+          @else if (section.tasks.length === 0) {
+            <div class="empty-state-box">
+              @if (app.selectedDate() === app.todayIso()) {
+                <span class="material-symbols-outlined empty-ic">celebration</span>
+                <p class="empty-title">You're all clear for today 🎉</p>
+                <p class="empty-sub">Nothing on the agenda yet — add a task to plan your day.</p>
+                <button type="button" class="btn-primary" (click)="app.openNewTask()">
+                  <span class="material-symbols-outlined inline-ic">add</span> Add a task
+                </button>
+              } @else {
+                <span class="material-symbols-outlined empty-ic">event_available</span>
+                <p class="empty-title">No tasks for this day</p>
+                <p class="empty-sub">Pick another day, or jump back to today.</p>
+              }
+            </div>
+          }
+          @else if (filteredAgendaTasks(section.tasks).length === 0) {
+            <div class="agenda-filter-empty">
+              <p class="empty-state">No {{ agendaPriorityFilter().toLowerCase() }} priority tasks here.</p>
+              <button type="button" class="btn-subtle sm" (click)="agendaPriorityFilter.set('ALL')">Show All</button>
+            </div>
+          }
+          @else {
+            <ul class="agenda-list">
+              @for (group of agendaGroups(filteredAgendaTasks(section.tasks)); track group.key) {
+                <li class="agenda-user-group">
+                @if (group.name) {
+                  <button type="button" class="agenda-group-toggle"
+                    [attr.aria-expanded]="expandedAgendaGroupKey() === group.key"
+                    [attr.aria-controls]="expandedAgendaGroupKey() === group.key ? 'agenda-group-' + group.key : null"
+                    (click)="toggleAgendaGroup(group.key)">
+                    <span class="assigned-avatar sm" [attr.data-tone]="app.avatarTone(group.name)" aria-hidden="true">{{ initials(group.name) }}</span>
+                    <span class="agenda-group-name">{{ group.name }}</span>
+                    <span class="agenda-group-count">{{ group.tasks.length }}</span>
+                    <span class="material-symbols-outlined agenda-group-chevron" aria-hidden="true">expand_more</span>
+                  </button>
+                }
+                @if (!group.name || expandedAgendaGroupKey() === group.key) {
+                <ul class="agenda-group-task-list" [id]="'agenda-group-' + group.key">
+                @for (t of group.tasks; track t.id) {
+                <li class="agenda-row" [attr.data-prio]="t.priority" [class.focused-card]="t.focusDate === app.todayIso() && t.status !== 'COMPLETED'" [class.completed-row]="t.status === 'COMPLETED'">
+                  <div class="agenda-row-left">
+                    @if (app.canChangeStatus(t)) {
+                      <input type="checkbox" class="exec-checkbox" [checked]="t.status === 'COMPLETED'" (change)="app.toggleComplete(t)" [attr.aria-label]="'Toggle completion for ' + t.title">
+                    }
+                    <div class="agenda-row-text" (click)="app.openEdit(t)">
+                      <div class="lr-title-line">
+                        <span class="agenda-title">{{ t.title }}</span>
+                        <span class="prio-pill" [attr.data-prio]="t.priority">{{ t.priority }}</span>
+                        <span class="mobile-task-status" [attr.data-status]="t.status">{{ t.status === 'COMPLETED' ? 'Completed' : t.status === 'IN_PROGRESS' ? 'In Progress' : 'To Do' }}</span>
+                        @if (t.focusDate === app.todayIso() && t.status !== 'COMPLETED') {
+                          <span class="focus-mini-pill">
+                            <span class="material-symbols-outlined filled inline-ic" aria-hidden="true">star</span> Focus
+                          </span>
+                        }
+                      </div>
+                      @if (!app.canChangeStatus(t)) { <span class="status-pill ip">{{ t.status === 'COMPLETED' ? 'Completed' : t.status === 'IN_PROGRESS' ? 'In Progress' : 'Active' }}</span> }
+                      @if (app.assignmentLabel(t) && app.selectedDate() !== app.todayIso()) {
+                        <span class="assignment-pill">
+                          <span class="material-symbols-outlined inline-ic" aria-hidden="true">assignment_ind</span>
+                          <span>{{ app.assignmentLabel(t) }}</span>
+                        </span>
+                      }
+                      @if (t.notes && !app.canEdit(t)) { <p class="task-description">{{ t.notes }}</p> }
+                      @if ((!app.canEdit(t) && t.category) || t.dueTime) {
+                        <div class="agenda-submeta">
+                          @if (t.category && !app.canEdit(t)) { <span class="cat-pill">{{ t.category }}</span> }
+                          @if (t.dueTime) { <span class="time-highlight">{{ app.formatTime12h(t.dueTime) }}</span> }
+                        </div>
+                      }
+                      @if (t.status === 'IN_PROGRESS' && app.canChangeStatus(t)) { <span class="status-pill ip">In Progress</span> }
+                    </div>
+                  </div>
+                  <div class="agenda-row-actions">
+                    @if (t.status !== 'COMPLETED' && app.canEdit(t) && app.selectedDate() === app.todayIso()) {
+                      <button
+                        type="button"
+                        class="icon-btn agenda-focus-pin-btn"
+                        [class.active-pin]="t.focusDate === app.todayIso()"
+                        (click)="app.toggleFocus(t)"
+                        [pTooltip]="t.focusDate === app.todayIso() ? 'Remove from Focus' : 'Pin to Today\'s Focus'"
+                        tooltipPosition="top"
+                        [attr.aria-label]="t.focusDate === app.todayIso() ? 'Remove ' + t.title + ' from focus' : 'Pin ' + t.title + ' to focus'"
+                      >
+                        <span class="material-symbols-outlined" [class.filled]="t.focusDate === app.todayIso()">star</span>
+                      </button>
+                    }
+                    @if (app.canEdit(t)) { <button type="button" class="icon-btn" (click)="app.openEdit(t)" [attr.aria-label]="'Edit ' + t.title" pTooltip="Edit task" tooltipPosition="top"><span class="material-symbols-outlined">edit</span></button> }
+                  </div>
+                </li>
+                }
+                </ul>
+                }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    </div>
+    <aside class="horizon-rail">
+      <section class="card-panel calendar-panel">
+        <div class="horizon-head">
+          <div class="calendar-heading">
+            <span class="calendar-kicker">WEEK VIEW</span>
+            <h2>Calendar</h2>
+          </div>
+          <div class="horizon-nav-btns">
+            <button type="button" class="icon-btn calendar-nav-btn" (click)="app.shiftCalendarPeriod(-1)" aria-label="Previous week"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></button>
+            <button type="button" class="icon-btn calendar-nav-btn" (click)="app.shiftCalendarPeriod(1)" aria-label="Next week"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></button>
+            <button type="button" class="btn-secondary sm calendar-month-btn" (click)="app.openHorizonModal()">Full Month</button>
+          </div>
+        </div>
+        <div class="week-strip">
+          @for (d of app.calendarDays(); track d.iso) {
+            <button type="button" class="week-day-pill" [class.active]="d.iso === app.selectedDate()" [class.is-today]="d.iso === app.todayIso()" [attr.aria-label]="d.weekday + ' ' + d.dayNum + (d.dueCount ? ', ' + d.dueCount + ' tasks' : ', no tasks')" [attr.aria-current]="d.iso === app.todayIso() ? 'date' : null" [attr.aria-pressed]="d.iso === app.selectedDate()" (click)="app.selectedDate.set(d.iso)">
+              <span class="wd-name">{{ d.weekday }}</span><span class="wd-num">{{ d.dayNum }}</span>
+              @if (d.dueCount > 0) { <span class="wd-count-badge">{{ d.dueCount }}</span> }
+            </button>
+          }
+        </div>
+        <p class="calendar-caption"><span class="material-symbols-outlined" aria-hidden="true">info</span> Past days show completed tasks. Open tasks appear today.</p>
+      </section>
+    </aside>
+  </div>
+
+  <dialog
+    #assigneeDialog
+    class="assignee-tasks-dialog"
+    closedby="any"
+    aria-labelledby="assignee-dialog-title"
+    (close)="onDialogClose()"
+    (cancel)="onDialogCancel($event)"
+    (pointerdown)="onDialogPointerDown($event)"
+    (pointerup)="onDialogPointerUp($event)"
+  >
+    @if (selectedAssignee(); as group) {
+      <div class="assignee-dialog-shell">
+        <header class="assignee-dialog-head">
+          <div class="assignee-head-identity">
+            @if (selectedAssigneeId() !== 'ALL') {
+              <span class="assigned-avatar lg" [attr.data-tone]="app.avatarTone(group.name)" aria-hidden="true">{{ initials(group.name) }}</span>
+            }
+            <div>
+              <h2 id="assignee-dialog-title">{{ group.name }}</h2>
+              <p class="subtitle">
+                {{ group.openCount }} pending · {{ group.tasks.length }} total assigned
+                @if (drawerTasks().length !== group.tasks.length) {
+                  · Showing {{ drawerTasks().length }}
+                }
+              </p>
+            </div>
+          </div>
+          <button type="button" class="icon-btn" (click)="closeAssignee()" aria-label="Close" autofocus>
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </header>
+
+        <div class="assignee-filter-bar">
+          <div class="assignee-search-wrap">
+            <span class="material-symbols-outlined assignee-search-ic" aria-hidden="true">search</span>
+            <input
+              class="assignee-search"
+              type="search"
+              [ngModel]="drawerSearch()"
+              (ngModelChange)="drawerSearch.set($event)"
+              placeholder="Search title, category, notes…"
+              aria-label="Search assigned tasks"
+            >
+            @if (drawerSearch()) {
+              <button
+                type="button"
+                class="assignee-search-clear"
+                (click)="drawerSearch.set('')"
+                aria-label="Clear search"
+              >
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            }
+          </div>
+
+          <div class="drawer-filter-pills" role="group" aria-label="Filter assigned tasks by status">
+            <button type="button" class="drawer-filter-pill" [class.active]="drawerStatus() === 'OPEN'" (click)="drawerStatus.set('OPEN')">
+              Open ({{ group.openCount }})
+            </button>
+            <button type="button" class="drawer-filter-pill" [class.active]="drawerStatus() === 'ACTIVE'" (click)="drawerStatus.set('ACTIVE')">
+              To Do ({{ countByStatus(group.tasks, 'ACTIVE') }})
+            </button>
+            <button type="button" class="drawer-filter-pill" [class.active]="drawerStatus() === 'IN_PROGRESS'" (click)="drawerStatus.set('IN_PROGRESS')">
+              In Progress ({{ countByStatus(group.tasks, 'IN_PROGRESS') }})
+            </button>
+            <button type="button" class="drawer-filter-pill" [class.active]="drawerStatus() === 'COMPLETED'" (click)="drawerStatus.set('COMPLETED')">
+              Completed ({{ countByStatus(group.tasks, 'COMPLETED') }})
+            </button>
+            <button type="button" class="drawer-filter-pill" [class.active]="drawerStatus() === 'ALL'" (click)="drawerStatus.set('ALL')">
+              All ({{ group.tasks.length }})
+            </button>
+          </div>
+
+          <div class="drawer-filter-pills" role="group" aria-label="Filter assigned tasks by priority">
+            <button type="button" class="drawer-filter-pill" [class.active]="drawerPriority() === 'ALL'" (click)="drawerPriority.set('ALL')">
+              All ({{ drawerStatusTasks().length }})
+            </button>
+            <button type="button" class="drawer-filter-pill prio-high" [class.active]="drawerPriority() === 'HIGH'" (click)="drawerPriority.set('HIGH')">
+              High ({{ countByPriority(drawerStatusTasks(), 'HIGH') }})
+            </button>
+            <button type="button" class="drawer-filter-pill prio-med" [class.active]="drawerPriority() === 'MEDIUM'" (click)="drawerPriority.set('MEDIUM')">
+              Med ({{ countByPriority(drawerStatusTasks(), 'MEDIUM') }})
+            </button>
+            <button type="button" class="drawer-filter-pill prio-low" [class.active]="drawerPriority() === 'LOW'" (click)="drawerPriority.set('LOW')">
+              Low ({{ countByPriority(drawerStatusTasks(), 'LOW') }})
+            </button>
+          </div>
+        </div>
+
+        @if (drawerTasks().length === 0) {
+          <div class="assignee-filter-empty">
+            <p class="empty-state">No tasks match these filters.</p>
+            <button type="button" class="btn-subtle sm" (click)="resetDrawerFilters()">Show all tasks</button>
+          </div>
+        } @else {
+          <ul class="agenda-list assignee-dialog-list compact">
+            @for (t of drawerTasks(); track t.id) {
+              <li class="agenda-row" [attr.data-prio]="t.priority" [class.completed-row]="t.status === 'COMPLETED'">
+                <div class="agenda-row-left">
+                  <div class="agenda-row-text" (click)="editFromDrawer(t)">
+                    <div class="drawer-row-top">
+                      <span class="agenda-title">{{ t.title }}</span>
+                      <span class="prio-pill" [attr.data-prio]="t.priority">{{ t.priority }}</span>
+                      <span class="status-pill ip" [attr.data-status]="t.status">
+                        {{ t.status === 'COMPLETED' ? 'Completed' : t.status === 'IN_PROGRESS' ? 'In Progress' : 'To Do' }}
+                      </span>
+                    </div>
+                    @if ((selectedAssigneeId() === 'ALL' && app.assignmentLabel(t)) || t.dueTime || t.category) {
+                      <div class="assignee-task-meta">
+                        @if (selectedAssigneeId() === 'ALL' && app.assignmentLabel(t)) {
+                          <span class="assignment-pill drawer-assignment-pill">
+                            <span class="material-symbols-outlined inline-ic" aria-hidden="true">assignment_ind</span>
+                            <span>{{ app.assignmentLabel(t) }}</span>
+                          </span>
+                        }
+                        @if (t.dueTime) { <span class="slot-notes">{{ app.formatTime12h(t.dueTime) }}</span> }
+                        @if (t.category) { <span class="cat-pill">{{ t.category }}</span> }
+                      </div>
+                    }
+                    @if (t.notes) {
+                      <button
+                        type="button"
+                        class="drawer-note-preview"
+                        [class.expanded]="expandedNoteIds().has(t.id)"
+                        [attr.aria-expanded]="expandedNoteIds().has(t.id)"
+                        (click)="toggleNoteExpanded(t.id); $event.stopPropagation()"
+                      >
+                        <span class="drawer-note-text">{{ t.notes }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+                <div class="agenda-row-actions">
+                  @if (app.canEdit(t)) {
+                    <button type="button" class="icon-btn" (click)="editFromDrawer(t)" [attr.aria-label]="'Edit ' + t.title" pTooltip="Edit task" tooltipPosition="top">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </dialog>
+</main>

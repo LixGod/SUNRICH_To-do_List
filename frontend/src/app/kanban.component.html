@@ -1,0 +1,172 @@
+<main class="canvas-wrap">
+          <header class="masthead">
+            <div class="masthead-left">
+              <div class="briefing-kicker">
+                <img class="masthead-logo" src="/sunrich-logo.png" alt="Sunrich Group" width="108" height="44">
+                <span class="kicker-date">{{ app.formattedSelectedDate() }}</span>
+              </div>
+              <h1 class="greeting-h1">Kanban Board</h1>
+              <p class="greeting-sub">Tasks grouped by sender and status.</p>
+            </div>
+
+            <div class="masthead-actions">
+              <div class="ledger-stat-pill">
+                <span><span class="dot-primary"></span> <strong>{{ app.tasksByStatus().ACTIVE.length }}</strong> To Do</span>
+                <span class="v-sep"></span>
+                <span><span class="dot-amber"></span> <strong>{{ app.tasksByStatus().IN_PROGRESS.length }}</strong> In Progress</span>
+                <span class="v-sep"></span>
+                <span><span class="dot-green"></span> <strong class="text-tertiary">{{ app.tasksByStatus().COMPLETED.length }}</strong> Done</span>
+              </div>
+            </div>
+          </header>
+
+          <!-- Compact Board Filter Bar -->
+          <section class="kanban-toolbar" aria-label="Board filters">
+            <div class="filter-select-buttons" role="group" aria-label="Filter board by priority">
+              <p-selectbutton [options]="priorityOptions" optionLabel="label" optionValue="value"
+                [allowEmpty]="false" [ngModel]="app.kanbanPriority()"
+                (ngModelChange)="app.kanbanPriority.set($event)" />
+            </div>
+
+            <div class="search-field-wrap">
+              <span class="material-symbols-outlined search-ic">search</span>
+              <input
+                type="search"
+                [ngModel]="app.kanbanSearch()"
+                (ngModelChange)="app.kanbanSearch.set($event)"
+                placeholder="Filter board by title or category…"
+                aria-label="Filter board by title or category"
+              >
+            </div>
+          </section>
+
+          @if (app.loading()) {
+            <div class="loading-skeletons kanban-loading" role="status" aria-label="Loading board">
+              <p-skeleton height="14rem" />
+              <p-skeleton height="14rem" />
+              <p-skeleton height="14rem" />
+            </div>
+          } @else {
+            <section class="kanban-board" cdkDropListGroup aria-label="Kanban Board">
+              <div class="kanban-grid-head" aria-hidden="true">
+                <span>Assigned by</span>
+                @for (col of app.kanbanColumns; track col.status) {
+                  <span>{{ col.label }}</span>
+                }
+              </div>
+              @if (app.kanbanRows().length === 0) {
+                <div class="empty-state-box kanban-board-empty">
+                  <span class="material-symbols-outlined empty-ic" aria-hidden="true">view_kanban</span>
+                  <p class="empty-title">{{ app.kanbanPriority() !== 'ALL' || app.kanbanSearch() ? 'No matching tasks' : 'No tasks on the board' }}</p>
+                  <p class="empty-sub">{{ app.kanbanPriority() !== 'ALL' || app.kanbanSearch() ? 'Try another search or priority.' : 'Create a task to start your board.' }}</p>
+                  @if (app.kanbanPriority() !== 'ALL' || app.kanbanSearch()) {
+                    <button type="button" class="btn-secondary" (click)="app.kanbanPriority.set('ALL'); app.kanbanSearch.set('')">Clear filters</button>
+                  } @else {
+                    <button type="button" class="btn-primary" (click)="app.openNewTask()">
+                      <span class="material-symbols-outlined inline-ic">add</span> New Task
+                    </button>
+                  }
+                </div>
+              }
+              @for (row of app.kanbanRows(); track row.username) {
+                <div class="kanban-user-row">
+                  <h2 class="kanban-user-name">
+                    <span class="assigned-avatar sm" [attr.data-tone]="app.avatarTone(row.name)" aria-hidden="true">{{ app.initials(row.name) }}</span>
+                    <span>{{ row.name }}</span>
+                  </h2>
+                  @for (col of app.kanbanColumns; track col.status) {
+                    <div class="kanban-col" [attr.data-status]="col.status">
+                      <header class="kanban-col-head">
+                        <span class="kanban-mobile-status">{{ col.label }}</span>
+                        <span class="kanban-count-pill" [attr.data-status]="col.status">{{ row.tasks[col.status].length }}</span>
+                      </header>
+                      <div
+                        class="kanban-col-body"
+                        cdkDropList
+                        [cdkDropListData]="row.tasks[col.status]"
+                        (cdkDropListDropped)="app.onKanbanDrop($event, col.status)"
+                      >
+                        @if (row.tasks[col.status].length === 0) {
+                          <p class="kanban-empty">No tasks</p>
+                        }
+                        @for (t of row.tasks[col.status]; track t.id) {
+                      <article
+                        class="kanban-card"
+                        [class.completed]="t.status === 'COMPLETED'"
+                        [class.focused-card]="t.focusDate === app.todayIso() && t.status !== 'COMPLETED'"
+                        [attr.data-prio]="t.priority"
+                        cdkDrag
+                        [cdkDragDisabled]="!app.canChangeStatus(t)"
+                        [cdkDragData]="t"
+                      >
+                        <div class="kanban-card-top">
+                          <span class="material-symbols-outlined drag-grip" aria-hidden="true">drag_indicator</span>
+                          <p-tag class="task-tag" [attr.data-prio]="t.priority" [value]="t.priority" [severity]="t.priority === 'HIGH' ? 'danger' : t.priority === 'MEDIUM' ? 'warn' : 'success'" [rounded]="true" />
+                          @if (t.category) {
+                            <span class="cat-pill">{{ t.category }}</span>
+                          }
+                          @if (t.focusDate === app.todayIso() && t.status !== 'COMPLETED') {
+                            <span class="focus-mini-pill">
+                              <span class="material-symbols-outlined filled inline-ic">push_pin</span> Focus
+                            </span>
+                          }
+                          <div class="kanban-card-actions">
+                            @if (t.status !== 'COMPLETED' && app.canEdit(t)) {
+                              <button
+                                type="button"
+                                class="icon-btn sm-ic"
+                                [class.active-pin]="t.focusDate === app.todayIso()"
+                                (click)="app.selectedDate.set(app.todayIso()); app.toggleFocus(t)"
+                                pTooltip="Pin to Today's Focus"
+                                tooltipPosition="top"
+                                aria-label="Pin to Today's Focus"
+                              >
+                                <span class="material-symbols-outlined" [class.filled]="t.focusDate === app.todayIso()">push_pin</span>
+                              </button>
+                            }
+                            @if (app.canEdit(t)) { <button type="button" class="icon-btn sm-ic" (click)="app.openEdit(t)" aria-label="Edit task" pTooltip="Edit task" tooltipPosition="top">
+                              <span class="material-symbols-outlined">more_horiz</span>
+                            </button> }
+                          </div>
+                        </div>
+
+                        <h3 class="kanban-card-title" [class.strike]="t.status === 'COMPLETED'">
+                          {{ t.title }}
+                        </h3>
+
+                        @if (t.notes) {
+                          <p class="kanban-card-notes">{{ t.notes }}</p>
+                        }
+
+                        <div class="kanban-card-foot">
+                          <div class="kanban-meta">
+                            @for (name of app.assigneeNames(t.assigneeIds); track name) {
+                              <span class="assignee-chip">
+                                <span class="material-symbols-outlined inline-ic">person</span>{{ name }}
+                              </span>
+                            }
+                          </div>
+
+                          <select
+                            class="kanban-status-select"
+                            [attr.data-status]="t.status"
+                            [ngModel]="t.status"
+                            [disabled]="!app.canChangeStatus(t)"
+                            (ngModelChange)="app.setTaskStatus(t, $event)"
+                            [attr.aria-label]="'Change status for ' + t.title"
+                          >
+                            <option value="ACTIVE">To Do</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                          </select>
+                        </div>
+                      </article>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </section>
+          }
+        </main>

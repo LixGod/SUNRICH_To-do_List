@@ -1,0 +1,99 @@
+<main class="admin-wrap">
+  <p-confirmdialog key="admin-delete" [breakpoints]="{ '575px': '92vw' }" [style]="{ width: '430px' }" />
+  <div class="admin-heading">
+    <div class="admin-heading-left">
+      <img class="admin-logo" src="/sunrich-logo.png" alt="Sunrich Group" width="108" height="44">
+      <div>
+        <h1>Manager accounts</h1>
+        <p>Create and manage access to each private planner.</p>
+      </div>
+    </div>
+    <span class="admin-count">{{ managers().length }} managers</span>
+  </div>
+  <p-message severity="error" [hidden]="!error()" role="alert">{{ error() }}</p-message>
+  <p-message severity="success" [hidden]="!message()" role="status">{{ message() }}</p-message>
+  <div class="admin-grid">
+    <section class="admin-card">
+      <h2>{{ editingId ? 'Edit manager' : 'Add manager' }}</h2>
+      <form (ngSubmit)="save()">
+        <label>Display name <input pInputText type="text" name="displayName" [(ngModel)]="displayName" required></label>
+        <label>Username <input pInputText type="text" name="username" [(ngModel)]="username" autocomplete="off" required></label>
+        <label>Role
+          <p-select name="seniorRole" [options]="seniorRoles" optionLabel="label" optionValue="value"
+            [(ngModel)]="seniorRole" placeholder="Select a role…" ariaLabel="Role" required [fluid]="true" />
+        </label>
+        <label class="admin-checkbox">
+          <input type="checkbox" name="superAdmin" [(ngModel)]="superAdmin"> Also grant Super Admin
+        </label>
+        <p class="admin-help">One management role per person. Super Admin can be added on top of any role.</p>
+        <label>{{ editingId ? 'New password (optional)' : 'Initial password' }}
+          <p-password name="password" [(ngModel)]="password" [required]="!editingId" [minlength]="8"
+            [toggleMask]="true" [feedback]="true" [fluid]="true" autocomplete="new-password"
+            [ariaLabel]="editingId ? 'New password (optional)' : 'Initial password'" />
+        </label>
+        <p class="admin-help">Passwords need at least 8 characters. Share initial passwords privately.</p>
+        <div class="admin-actions">
+          @if (editingId) { <button type="button" class="btn-ghost" (click)="reset()">Cancel</button> }
+          <p-button type="submit" [label]="editingId ? 'Save changes' : 'Add manager'" [disabled]="busy() || !valid" />
+        </div>
+      </form>
+    </section>
+    <section class="admin-card">
+      <h2>Senior Management</h2>
+      <input pInputText type="search" class="employee-search" name="managerSearch" [(ngModel)]="managerSearch"
+        placeholder="Search managers…" aria-label="Search managers">
+      <p-table [value]="filteredManagers()" [paginator]="filteredManagers().length > 10" [rows]="10" [scrollable]="true" styleClass="admin-table">
+        <ng-template #header><tr><th pSortableColumn="displayName">Name <p-sortIcon field="displayName" /></th><th pSortableColumn="username">Username <p-sortIcon field="username" /></th><th>Role</th><th>Actions</th></tr></ng-template>
+        <ng-template #body let-user>
+          <tr>
+            <td>
+              <span class="admin-person-cell">
+                <span class="admin-avatar" [attr.data-tone]="avatarTone(user.displayName)" aria-hidden="true">{{ initials(user.displayName) }}</span>
+                <span class="admin-person-name">{{ user.displayName }}</span>
+              </span>
+            </td>
+            <td class="admin-username-cell">{{ user.username }}</td>
+            <td>
+              <div class="role-pills">
+                @for (badge of roleBadges(user.roles); track badge.label) {
+                  <span class="role-pill" [class.super]="badge.isSuper">{{ badge.label }}</span>
+                }
+              </div>
+            </td>
+            <td><div class="admin-actions"><button type="button" class="btn-ghost" (click)="edit(user)">Edit</button><button type="button" class="btn-danger" (click)="remove(user)" [disabled]="busy()">Delete</button></div></td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage><tr><td colspan="4">{{ managers().length ? 'No matches.' : 'No manager accounts yet. Add one to get started.' }}</td></tr></ng-template>
+      </p-table>
+    </section>
+
+    <section class="admin-card admin-card-wide">
+      <div class="admin-card-head">
+        <h2>Employees</h2>
+        <span class="admin-count subtle">{{ employees().length }} {{ employees().length === 1 ? 'employee' : 'employees' }}</span>
+      </div>
+      <p class="admin-help">People who can be tagged on tasks as a reminder. They have no portal access.</p>
+      <form (ngSubmit)="addEmployee()" class="employee-add">
+        <input pInputText type="text" name="employeeName" [(ngModel)]="employeeName" placeholder="Employee name" aria-label="Employee name" required>
+        <p-button type="submit" label="Add" [disabled]="busy() || !employeeName.trim()" />
+      </form>
+      <input pInputText type="search" class="employee-search" name="employeeSearch" [(ngModel)]="employeeSearch"
+        placeholder="Search {{ employees().length }} employees…" aria-label="Search employees">
+      <p-table [value]="filteredEmployees()" [paginator]="filteredEmployees().length > 10" [rows]="10" [scrollable]="true" styleClass="admin-table">
+        <ng-template #header><tr><th pSortableColumn="name">Employee <p-sortIcon field="name" /></th><th>Actions</th></tr></ng-template>
+        <ng-template #body let-emp>
+          <tr>
+            <td>
+              <span class="admin-person-cell">
+                <span class="admin-avatar sm" [attr.data-tone]="avatarTone(emp.name)" aria-hidden="true">{{ initials(emp.name) }}</span>
+                <span class="admin-person-name">{{ emp.name }}</span>
+              </span>
+            </td>
+            <td><div class="admin-actions"><button type="button" class="btn-danger" (click)="removeEmployee(emp.id, emp.name)">Remove</button></div></td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage><tr><td colspan="2">{{ employees().length ? 'No matches.' : 'No employees yet. Add the first one above.' }}</td></tr></ng-template>
+      </p-table>
+    </section>
+  </div>
+</main>

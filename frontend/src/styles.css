@@ -1,0 +1,224 @@
+@import "primeicons/primeicons.css";
+
+:root {
+  color-scheme: light dark;
+  accent-color: var(--primary-container);
+  --scrollbar-thumb: light-dark(#64748b, #6b7280);
+  --scrollbar-track: light-dark(#e2e8f0, #161a23);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  /* Executive Desk Liquid Glass Palette (Light & Dark) */
+  --surface: light-dark(#dce5f5, #0f1219);
+  --surface-lowest: light-dark(rgba(255, 255, 255, 0.38), rgba(25, 28, 35, 0.42));
+  --surface-low: light-dark(rgba(232, 240, 255, 0.36), rgba(31, 36, 45, 0.48));
+  --surface-container: light-dark(rgba(220, 230, 250, 0.45), rgba(38, 43, 54, 0.55));
+  --surface-high: light-dark(rgba(205, 218, 245, 0.55), rgba(49, 55, 69, 0.62));
+  --border: light-dark(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.18));
+
+  --glass-bg: linear-gradient(
+    135deg,
+    light-dark(rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.12)) 0%,
+    light-dark(rgba(230, 238, 255, 0.24), rgba(17, 19, 24, 0.42)) 50%,
+    light-dark(rgba(255, 220, 228, 0.34), rgba(255, 107, 122, 0.08)) 100%
+  );
+  --glass-filter: url(#liquid-glass-refract) blur(14px) saturate(200%) contrast(1.04);
+  --glass-webkit-filter: blur(14px) saturate(200%) contrast(1.04);
+  --glass-border: light-dark(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.22));
+  --glass-shadow:
+    0 14px 34px -8px light-dark(rgba(15, 23, 42, 0.15), rgba(0, 0, 0, 0.55)),
+    0 2px 6px light-dark(rgba(15, 23, 42, 0.06), rgba(0, 0, 0, 0.3)),
+    0 0 0 1px light-dark(rgba(15, 23, 42, 0.1), rgba(255, 255, 255, 0.06)),
+    inset 0 2px 1.5px light-dark(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.38)),
+    inset 0 -2px 3px light-dark(rgba(100, 116, 155, 0.24), rgba(0, 0, 0, 0.45)),
+    inset 2px 2px 6px light-dark(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.14)),
+    inset -2px -2px 6px light-dark(rgba(100, 116, 155, 0.18), rgba(0, 0, 0, 0.3));
+
+  --on-surface: light-dark(#171c23, #f1f3f9);
+  --on-surface-variant: light-dark(#5b403f, #d5c2c1);
+  --secondary: light-dark(#5d5e63, #9ca3af);
+
+  --primary: light-dark(#a30022, #ff6b7a);
+  --primary-container: #c82336;
+  --on-primary: #ffffff;
+  --primary-fixed: light-dark(rgba(200, 35, 54, 0.24), rgba(255, 107, 122, 0.28));
+  --primary-tint: light-dark(rgba(200, 35, 54, 0.09), rgba(200, 35, 54, 0.18));
+  --primary-gradient: linear-gradient(118deg, light-dark(#c82336, #d12b44) 0%, light-dark(#9c0b22, #ff6b7a) 100%);
+  --primary-glow: 0 10px 24px -8px light-dark(rgba(163, 0, 34, 0.38), rgba(255, 107, 122, 0.32));
+
+  --tertiary: light-dark(#005c37, #4ade80);
+  --tertiary-container: #27754d;
+  --tertiary-fixed: light-dark(rgba(39, 117, 77, 0.16), rgba(74, 222, 128, 0.18));
+
+  --amber: light-dark(#b45309, #fbbf24);
+  --amber-tint: light-dark(rgba(180, 83, 9, 0.1), rgba(251, 191, 36, 0.16));
+
+  /* Admin component compatibility aliases */
+  --brand: var(--primary-container);
+  --brand-soft: var(--primary-tint);
+  --bg: var(--surface);
+  --surface-muted: var(--surface-low);
+  --text: var(--on-surface);
+  --text-muted: var(--secondary);
+  --high: var(--primary);
+  --medium: var(--amber);
+  --low: var(--tertiary);
+
+  --shadow-card: var(--glass-shadow);
+  --shadow-elevated:
+    0 18px 40px -10px light-dark(rgba(15, 23, 42, 0.18), rgba(0, 0, 0, 0.6)),
+    inset 0 1.5px 1px light-dark(rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.4)),
+    inset 0 -1.5px 2px light-dark(rgba(15, 23, 42, 0.12), rgba(0, 0, 0, 0.5));
+}
+
+:root:has(meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
+}
+
+:root:has(meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  scroll-padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--surface);
+  background-image:
+    radial-gradient(at 8% 0%, light-dark(rgba(200, 35, 54, 0.09), rgba(200, 35, 54, 0.1)), transparent 42%),
+    linear-gradient(155deg, light-dark(#e6ebf4, #10141c), light-dark(#e9e6ed, #171b25));
+  background-size: 100% 100%, 100% 100%;
+  background-attachment: fixed;
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+/* fixed-attachment background repaints every scroll frame on mobile (jank); pin it once instead */
+@media (max-width: 820px) {
+  html, body { background-attachment: scroll; }
+}
+
+h1, h2, h3, .font-headline {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  margin: 0;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+@media (max-width: 600px) {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+:where(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+  user-select: none;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+  border: 1px solid var(--glass-border);
+  background: light-dark(rgba(255, 255, 255, 0.55), rgba(20, 24, 32, 0.65));
+  backdrop-filter: url(#liquid-glass-refract) blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  color: var(--on-surface);
+  padding: 0;
+  box-shadow: var(--shadow-elevated);
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(23, 28, 35, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vt-fade-out 160ms ease-out both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-fade-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+::selection {
+  background: var(--primary-container);
+  color: #ffffff;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --scrollbar-thumb: light-dark(#000000, #ffffff);
+    --scrollbar-track: light-dark(#ffffff, #000000);
+  }
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 2px solid var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

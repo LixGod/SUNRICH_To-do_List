@@ -1,0 +1,21 @@
+services:
+  frontend:
+    build: ./frontend
+    image: sunrich-todo-frontend:lan
+    extra_hosts:
+      - "backend:host-gateway"
+
+  lan-proxy:
+    image: caddy:2-alpine
+    ports:
+      - "${LAN_HTTPS_PORT:-8443}:443"
+    environment:
+      LAN_HOST: ${LAN_HOST:?Set LAN_HOST to this computer's LAN IP address}
+    volumes:
+      - ./Caddyfile.lan:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - frontend
+
+volumes:
+  caddy_data:

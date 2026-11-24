@@ -1,0 +1,354 @@
+<main class="canvas-wrap">
+          <header class="masthead">
+            <div class="masthead-left">
+              <div class="briefing-kicker">
+                <img class="masthead-logo" src="/sunrich-logo.png" alt="Sunrich Group" width="108" height="44">
+                <span class="kicker-date">Personal Register</span>
+              </div>
+              <h1 class="greeting-h1">My Tasks</h1>
+              <p class="greeting-sub">All your commitments in one place.</p>
+            </div>
+
+            <div class="masthead-actions">
+              <div class="ledger-stat-pill">
+                <span><span class="dot-neutral"></span> <strong>{{ app.listTotal() }}</strong> Matching</span>
+                <span class="v-sep"></span>
+                <span><span class="dot-primary"></span> <strong class="text-primary">{{ app.activeTasks().length }}</strong> Active</span>
+              </div>
+              <button type="button" class="btn-primary" (click)="app.openNewTask()">
+                <span class="material-symbols-outlined inline-ic">add</span>
+                <span>New Task</span>
+                <kbd>Ctrl N</kbd>
+              </button>
+            </div>
+          </header>
+
+          <section class="metrics-row">
+            <div class="metric-tile" (click)="app.statusFilter.set('ACTIVE'); app.loadList()" style="cursor:pointer">
+              <div class="metric-info">
+                <span class="metric-kicker">ACTIVE QUEUE</span>
+                <div class="metric-number-row">
+                  <span class="metric-big">{{ app.tasksByStatus().ACTIVE.length }}</span>
+                  <span class="metric-unit">open commitments</span>
+                </div>
+                <div class="metric-foot">
+                  <span class="dot-primary"></span>
+                  <span>{{ app.focusTasks().length }}/3 pinned to Today's Focus</span>
+                </div>
+              </div>
+              <div class="tile-icon-box">
+                <span class="material-symbols-outlined text-primary">assignment</span>
+              </div>
+            </div>
+
+            <div class="metric-tile" (click)="app.statusFilter.set('IN_PROGRESS'); app.loadList()" style="cursor:pointer">
+              <div class="metric-info">
+                <span class="metric-kicker">ACTIVE EXECUTION</span>
+                <div class="metric-number-row">
+                  <span class="metric-big">{{ app.tasksByStatus().IN_PROGRESS.length }}</span>
+                  <span class="metric-unit">in progress</span>
+                </div>
+                <div class="metric-foot muted">
+                  <span class="dot-amber"></span>
+                  <span>Tasks in progress</span>
+                </div>
+              </div>
+              <div class="tile-icon-box">
+                <span class="material-symbols-outlined text-amber">pending_actions</span>
+              </div>
+            </div>
+
+            <div class="metric-tile" (click)="app.statusFilter.set('COMPLETED'); app.loadList()" style="cursor:pointer">
+              <div class="metric-info">
+                <span class="metric-kicker">SIGNED OFF &amp; RESOLVED</span>
+                <div class="metric-number-row">
+                  <span class="metric-big text-tertiary">{{ app.tasksByStatus().COMPLETED.length }}</span>
+                  <span class="metric-unit">completed</span>
+                </div>
+                <div class="metric-foot text-tertiary">
+                  <span class="dot-green"></span>
+                  <span>{{ app.workTasks().length ? ((app.tasksByStatus().COMPLETED.length / app.workTasks().length) * 100 | number:'1.0-0') : 0 }}% portfolio completion rate</span>
+                </div>
+              </div>
+              <div class="tile-icon-box">
+                <span class="material-symbols-outlined text-tertiary">verified</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="dashboard-grid">
+          <section class="card-panel filter-bar-panel">
+            <div class="filter-top-row">
+              <div class="filter-select-buttons" role="group" aria-label="Filter tasks by status">
+                <p-selectbutton [options]="statusOptions" optionLabel="label" optionValue="value"
+                  [allowEmpty]="false" [ngModel]="app.statusFilter()"
+                  (ngModelChange)="app.statusFilter.set($event); app.loadList()" />
+              </div>
+
+              <div class="search-field-wrap">
+                <span class="material-symbols-outlined search-ic">search</span>
+                <input
+                  #searchInput
+                  id="taskSearchInput"
+                  type="search"
+                  [ngModel]="app.searchQuery()"
+                  (ngModelChange)="app.searchQuery.set($event); app.loadList()"
+                  placeholder="Search by title…"
+                  aria-label="Search tasks by title"
+                >
+              </div>
+            </div>
+
+            <div class="filter-bottom-row">
+              <div class="filter-dropdowns">
+                <label class="chip-select">
+                  <span class="dot-primary"></span>
+                  <span>Priority:</span>
+                  <select
+                    [ngModel]="app.priorityFilter()"
+                    (ngModelChange)="app.priorityFilter.set($event); app.loadList()"
+                    aria-label="Filter by priority"
+                  >
+                    <option value="ALL">All</option>
+                    <option value="HIGH">High Priority</option>
+                    <option value="MEDIUM">Medium Priority</option>
+                    <option value="LOW">Low Priority</option>
+                  </select>
+                </label>
+
+                <label class="chip-select">
+                  <span class="material-symbols-outlined inline-ic">folder_open</span>
+                  <span>Category:</span>
+                  <input
+                    type="search"
+                    [ngModel]="app.categoryFilter()"
+                    (ngModelChange)="app.categoryFilter.set($event); app.loadList()"
+                    aria-label="Filter by category"
+                    placeholder="All"
+                  >
+                </label>
+
+              </div>
+
+              <div class="sort-controls">
+                <label class="chip-select">
+                  <span class="material-symbols-outlined inline-ic">swap_vert</span>
+                  <select
+                    [ngModel]="app.sortBy()"
+                    (ngModelChange)="app.sortBy.set($event); app.loadList()"
+                    aria-label="Sort tasks"
+                  >
+                    <option value="PRIORITY">Sort: Highest Priority</option>
+                    <option value="NEWEST">Sort: Newest First</option>
+                  </select>
+                </label>
+                <button type="button" class="btn-subtle sm" (click)="app.resetFilters()">
+                  <span class="material-symbols-outlined inline-ic">filter_alt_off</span>
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            @if (app.listLoading() && app.listTasks().length === 0) {
+              <div class="loading-skeletons" role="status" aria-label="Loading tasks">
+                <p-skeleton height="4.5rem" />
+                <p-skeleton height="4.5rem" />
+                <p-skeleton height="4.5rem" />
+              </div>
+            } @else if (app.listTasks().length === 0) {
+              <div class="empty-state-box">
+                <span class="material-symbols-outlined empty-ic">inventory_2</span>
+                <p class="empty-title">No tasks here yet</p>
+                <p class="empty-sub">Create one to get started, or clear your filters to see more.</p>
+                <button type="button" class="btn-primary" (click)="app.openNewTask()">
+                  <span class="material-symbols-outlined inline-ic">add</span> New Task
+                </button>
+              </div>
+            } @else {
+              <cdk-virtual-scroll-viewport
+                class="task-viewport"
+                [style.height.px]="app.listTasks().length * 152 > 520 ? 520 : app.listTasks().length * 152"
+                itemSize="152"
+                minBufferPx="456"
+                maxBufferPx="912"
+              >
+                <ul class="ledger-list-card">
+                  <li
+                    *cdkVirtualFor="let t of app.listTasks(); trackBy: app.trackById"
+                    class="ledger-row"
+                    [attr.data-prio]="t.priority"
+                    [class.focused-card]="t.focusDate === app.todayIso() && t.status !== 'COMPLETED'"
+                    [class.completed]="t.status === 'COMPLETED'"
+                  >
+                    <div class="ledger-row-main">
+                      <input
+                        type="checkbox"
+                        class="exec-checkbox"
+                        [checked]="t.status === 'COMPLETED'"
+                        [disabled]="!app.canChangeStatus(t)"
+                        (change)="app.toggleComplete(t)"
+                        [attr.aria-label]="'Toggle completion for ' + t.title"
+                      >
+                      <div class="ledger-row-content" (click)="app.openEdit(t)">
+                        <div class="lr-title-line">
+                          <span class="lr-title" [class.strike]="t.status === 'COMPLETED'" [attr.title]="t.title">{{ t.title }}</span>
+                          <p-tag class="task-tag" [attr.data-prio]="t.priority" [value]="t.priority" [severity]="t.priority === 'HIGH' ? 'danger' : t.priority === 'MEDIUM' ? 'warn' : 'success'" [rounded]="true" />
+                          <p-tag class="task-tag status-tag" [attr.data-status]="t.status" [value]="t.status === 'IN_PROGRESS' ? 'In Progress' : t.status === 'COMPLETED' ? 'Completed' : 'To Do'" [severity]="t.status === 'COMPLETED' ? 'success' : t.status === 'IN_PROGRESS' ? 'info' : 'secondary'" [rounded]="true" />
+                          @if (t.focusDate === app.todayIso() && t.status !== 'COMPLETED') {
+                            <span class="focus-mini-pill">
+                              <span class="material-symbols-outlined filled inline-ic">star</span> Today's Focus
+                            </span>
+                          }
+                        </div>
+
+                        @if (t.notes && !app.canEdit(t)) {
+                          <p class="task-description" [attr.title]="t.notes">{{ t.notes }}</p>
+                        }
+
+                        <div class="lr-meta-line">
+                          @if (app.canEdit(t)) {
+                            @if (app.assignmentLabel(t)) {
+                              <span class="assignee-chip assignment-chip">
+                                <span class="material-symbols-outlined inline-ic" aria-hidden="true">assignment_ind</span>
+                                <span>{{ app.assignmentLabel(t) }}</span>
+                              </span>
+                            } @else if (t.status === 'COMPLETED' && t.completedAt) {
+                              <span>Completed {{ t.completedAt | date:'mediumDate':'+0530' }}</span>
+                            } @else if (t.assigneeIds?.length) {
+                              <span class="assignee-chip" [attr.title]="app.assigneeNames(t.assigneeIds).join(', ')">
+                                <span class="material-symbols-outlined inline-ic">person</span>{{ t.assigneeIds?.length }} assigned
+                              </span>
+                            } @else if (t.category) {
+                              <span class="cat-pill" [attr.title]="t.category">{{ t.category }}</span>
+                            }
+                          } @else {
+                            @if (app.assignmentLabel(t)) {
+                              <span class="assignee-chip assignment-chip">
+                                <span class="material-symbols-outlined inline-ic" aria-hidden="true">assignment_ind</span>
+                                <span>{{ app.assignmentLabel(t) }}</span>
+                              </span>
+                            }
+                            @if (t.status === 'COMPLETED' && t.completedAt) { <span>Completed {{ t.completedAt | date:'mediumDate':'+0530' }}</span> }
+                            @if (t.category) { <span class="cat-pill" [attr.title]="t.category">{{ t.category }}</span> }
+                            @for (name of app.assigneeNames(t.assigneeIds).slice(0, 2); track name) {
+                              <span class="assignee-chip"><span class="material-symbols-outlined inline-ic">person</span>{{ name }}</span>
+                            }
+                            @if (app.assigneeNames(t.assigneeIds).length > 2) {
+                              <span class="assignee-chip" [attr.title]="app.assigneeNames(t.assigneeIds).join(', ')">+{{ app.assigneeNames(t.assigneeIds).length - 2 }} more</span>
+                            }
+                            @if (t.assigneeIds?.length) {
+                              <span class="mobile-assignee-count" [attr.title]="app.assigneeNames(t.assigneeIds).join(', ')">{{ t.assigneeIds?.length }} assigned</span>
+                            }
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="ledger-row-actions">
+                      @if (app.canEdit(t) || app.canChangeStatus(t)) {
+                        <button type="button" class="icon-btn mobile-task-menu-btn" (click)="openTaskMenu($event, t)" aria-label="More task actions">
+                          <span class="material-symbols-outlined">more_vert</span>
+                        </button>
+                      }
+                      @if (t.status === 'ACTIVE' && app.canEdit(t)) {
+                        <button
+                          type="button"
+                          class="icon-btn"
+                          [class.active-pin]="t.focusDate === app.todayIso()"
+                          (click)="app.selectedDate.set(app.todayIso()); app.toggleFocus(t)"
+                          [pTooltip]="t.focusDate === app.todayIso() ? 'Remove from Focus' : 'Add to Focus'"
+                          tooltipPosition="top"
+                          [attr.aria-label]="t.focusDate === app.todayIso() ? 'Remove from Focus' : 'Add to Focus'"
+                        >
+                          <span class="material-symbols-outlined" [class.filled]="t.focusDate === app.todayIso()">star</span>
+                        </button>
+                      }
+                      @if (app.canEdit(t)) { <button type="button" class="icon-btn" (click)="app.openEdit(t)" aria-label="Edit task" pTooltip="Edit task" tooltipPosition="top">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button type="button" class="icon-btn danger" (click)="app.confirmDelete(t)" aria-label="Delete task" pTooltip="Delete task" tooltipPosition="top">
+                        <span class="material-symbols-outlined">delete_outline</span>
+                      </button> }
+                    </div>
+                  </li>
+                </ul>
+              </cdk-virtual-scroll-viewport>
+              <p-menu #taskMenu [model]="taskMenuItems" [popup]="true" appendTo="body" />
+
+            }
+
+            <p-paginator class="task-paginator" [first]="app.listPage() * 50" [rows]="50"
+              [totalRecords]="app.listTotal()" [pageLinkSize]="3" [showFirstLastIcon]="false"
+              [alwaysShow]="false" (onPageChange)="onPageChange($event.page ?? 0)" />
+
+            <div class="empty-focus-card" (click)="app.openNewTask()" style="cursor:pointer">
+              <span class="material-symbols-outlined text-primary">add_task</span>
+              <p><strong>Quick Capture Initiative</strong> — Click here or press <kbd>Ctrl+N</kbd> to log a new strategic commitment.</p>
+            </div>
+          </section>
+
+          <aside class="horizon-rail">
+            <section class="card-panel">
+              <div class="horizon-head">
+                <div>
+                  <h2>Today's Focus Quorum</h2>
+                  <span class="subtitle">{{ app.focusTasks().length }} of 3 priority slots pinned</span>
+                </div>
+                <span class="quorum-pill">FOCUS 3</span>
+              </div>
+              @if (app.focusTasks().length === 0) {
+                <div class="empty-focus-card" (click)="app.openNewTask()" style="cursor:pointer">
+                  <span class="material-symbols-outlined">star</span>
+                  <p>Star up to 3 active tasks on the left to pin them to Today's Focus.</p>
+                </div>
+              } @else {
+                @for (t of app.focusTasks(); track t.id; let idx = $index) {
+                  <div class="horizon-mini-card" (click)="app.openEdit(t)">
+                    <div class="hmc-top">
+                      <span class="slot-num">SLOT 0{{ idx + 1 }}</span>
+                      <span class="prio-pill" [attr.data-prio]="t.priority">{{ t.priority }}</span>
+                    </div>
+                    <span class="hmc-title">{{ t.title }}</span>
+                  </div>
+                }
+              }
+            </section>
+
+            <section class="card-panel">
+              <div class="horizon-head">
+                <div>
+                  <h2>Portfolio Velocity</h2>
+                  <span class="subtitle">Live status distribution</span>
+                </div>
+                <span class="quorum-pill">
+                  {{ app.portfolioCompletion() | number:'1.0-0' }}% DONE
+                </span>
+              </div>
+              <p-progressbar [value]="app.portfolioCompletion()"
+                [showValue]="false" ariaLabel="Portfolio completion" />
+              <div class="velocity-bar" role="img" aria-label="Task status distribution">
+                <span class="vb-seg done" [style.flex]="app.tasksByStatus().COMPLETED.length || 0.05"></span>
+                <span class="vb-seg ip" [style.flex]="app.tasksByStatus().IN_PROGRESS.length || 0.05"></span>
+                <span class="vb-seg todo" [style.flex]="app.tasksByStatus().ACTIVE.length || 0.05"></span>
+              </div>
+              <div class="velocity-legend">
+                <button type="button" class="vel-stat-btn" (click)="app.statusFilter.set('ACTIVE'); app.loadList()">
+                  <span class="dot-primary"></span>
+                  <span>To Do</span>
+                  <strong>{{ app.tasksByStatus().ACTIVE.length }}</strong>
+                </button>
+                <button type="button" class="vel-stat-btn" (click)="app.statusFilter.set('IN_PROGRESS'); app.loadList()">
+                  <span class="dot-amber"></span>
+                  <span>In Progress</span>
+                  <strong>{{ app.tasksByStatus().IN_PROGRESS.length }}</strong>
+                </button>
+                <button type="button" class="vel-stat-btn" (click)="app.statusFilter.set('COMPLETED'); app.loadList()">
+                  <span class="dot-green"></span>
+                  <span>Completed</span>
+                  <strong>{{ app.tasksByStatus().COMPLETED.length }}</strong>
+                </button>
+              </div>
+            </section>
+          </aside>
+          </div>
+        </main>
