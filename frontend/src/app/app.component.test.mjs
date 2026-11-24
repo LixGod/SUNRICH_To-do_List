@@ -403,6 +403,55 @@ test('minute refresh keeps the current My Tasks history page', () => {
   }
 });
 
+test('session startup requests CSRF and account together', () => {
+  const csrf = new Subject();
+  const requested = [];
+  const injector = createEnvironmentInjector([
+    { provide: ɵChangeDetectionScheduler, useValue: { notify() {} } },
+    { provide: ɵEffectScheduler, useValue: { add() {}, remove() {} } },
+    { provide: ConfirmationService, useValue: { confirm() {} } },
+    { provide: HttpClient, useValue: { get: url => {
+      requested.push(url);
+      if (url === '/api/auth/csrf') return csrf;
+      if (url === '/api/auth/me') return of({ id: 1, username: 'mgr-a', displayName: 'Manager', roles: ['DIRECTOR'] });
+      return of([]);
+    } } }
+  ], Injector.NULL);
+  const app = runInInjectionContext(injector, () => new AppComponent());
+  try {
+    app.ngOnInit();
+    assert.deepEqual(requested.slice(0, 2), ['/api/auth/csrf', '/api/auth/me']);
+    assert.equal(app.authReady(), false);
+    csrf.next({ token: 'csrf' });
+    csrf.complete();
+    assert.equal(app.authReady(), true);
+    assert.equal(app.account()?.username, 'mgr-a');
+  } finally {
+    app.ngOnDestroy();
+    injector.destroy();
+  }
+});
+
+test('session startup remains usable when no account is signed in', () => {
+  const injector = createEnvironmentInjector([
+    { provide: ɵChangeDetectionScheduler, useValue: { notify() {} } },
+    { provide: ɵEffectScheduler, useValue: { add() {}, remove() {} } },
+    { provide: ConfirmationService, useValue: { confirm() {} } },
+    { provide: HttpClient, useValue: { get: url => url === '/api/auth/csrf'
+      ? of({ token: 'csrf' }) : throwError(() => ({ status: 401 })) } }
+  ], Injector.NULL);
+  const app = runInInjectionContext(injector, () => new AppComponent());
+  try {
+    app.ngOnInit();
+    assert.equal(app.authReady(), true);
+    assert.equal(app.account(), null);
+    assert.equal(app.authError(), '');
+  } finally {
+    app.ngOnDestroy();
+    injector.destroy();
+  }
+});
+
 test('sign-in explains a temporary login limit', () => {
   const injector = createEnvironmentInjector([
     { provide: ɵChangeDetectionScheduler, useValue: { notify() {} } },

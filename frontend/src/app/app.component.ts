@@ -2,6 +2,7 @@ import { ApplicationRef, Component, HostListener, OnDestroy, OnInit, ViewEncapsu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { catchError, forkJoin, of } from 'rxjs';
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Priority, WORKSPACE_TABS, WorkspaceTab, addDaysIso, addMonthsIso, compareTaskStack, localIsoDate, monthGridSize, parseSmartOmnibar, plannerTodayIso, resolveNavPrefs, taskOnDate } from './date-utils';
 import { AdminComponent } from './admin/admin.component';
@@ -527,24 +528,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private refreshSession(): void {
     const session = this.sessionVersion;
-    this.http.get('/api/auth/csrf').subscribe({
-      next: () => {
+    forkJoin([
+      this.http.get('/api/auth/csrf'),
+      this.http.get<Account>('/api/auth/me').pipe(catchError(() => of(null)))
+    ]).subscribe({
+      next: ([, account]) => {
         if (session !== this.sessionVersion) return;
-        this.http.get<Account>('/api/auth/me').subscribe({
-          next: account => {
-            if (session !== this.sessionVersion) return;
-            this.account.set(account);
-            this.authReady.set(true);
-            this.applyUserNavPrefs(account.username);
-            this.loadEmployees();
-            if (this.isStaff()) {
-              this.loadRecipients();
-              this.loadTasks();
-              if (this.activeTab() === 'my-tasks') this.loadList();
-            }
-          },
-          error: () => { if (session === this.sessionVersion) this.authReady.set(true); }
-        });
+        this.authReady.set(true);
+        if (!account) return;
+        this.account.set(account);
+        this.applyUserNavPrefs(account.username);
+        this.loadEmployees();
+        if (this.isStaff()) {
+          this.loadRecipients();
+          this.loadTasks();
+          if (this.activeTab() === 'my-tasks') this.loadList();
+        }
       },
       error: () => {
         if (session !== this.sessionVersion) return;
